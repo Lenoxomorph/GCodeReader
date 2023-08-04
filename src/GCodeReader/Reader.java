@@ -4,10 +4,8 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Comparator;
 import java.util.Scanner;
 
 public class Reader extends JFrame {
@@ -15,29 +13,18 @@ public class Reader extends JFrame {
     public Reader() {
         super(WINDOW_TITLE);
 
-        JTextArea outputArea = new JTextArea() {{
-            setEditable(false);
-            setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
-            setBackground(Color.decode("#f2fbff"));
-            setLineWrap(true);
-        }};
-        JTextArea inputArea = new JTextArea() {
-            private void update() {
-                outputArea.setText(getText());
-            }
-            {
-            setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
-            setBackground(Color.decode("#f2fbff"));
-            setLineWrap(true);
-            getDocument().addDocumentListener(new DocumentListener() {
+        TextDisplay outputArea = new TextDisplay() {{textArea.setEditable(false);}};
+        TextDisplay inputArea = new TextDisplay() {
+            private void update() {outputArea.setText(textArea.getText());}
+            {textArea.getDocument().addDocumentListener(new DocumentListener() {
                 @Override
                 public void insertUpdate(DocumentEvent e) {update();}
                 @Override
                 public void removeUpdate(DocumentEvent e) {update();}
                 @Override
                 public void changedUpdate(DocumentEvent e) {update();}
-            });
-        }};
+                });}
+        };
         JButton importButton = new JButton("Import") {{
             setFocusable(false);
             setHorizontalAlignment(SwingConstants.RIGHT);
@@ -45,7 +32,16 @@ public class Reader extends JFrame {
                 JFileChooser chooser = new JFileChooser();
                 chooser.showOpenDialog(this);
                 File file = chooser.getSelectedFile();
-                System.out.println(file);
+                Scanner scanner = null;
+                try {
+                    scanner = new Scanner(file);
+                } catch (FileNotFoundException ex) {
+                    ex.printStackTrace();
+                }
+                assert scanner != null;
+                String content = scanner.useDelimiter("\\A").next();
+                scanner.close();
+                inputArea.setText(content);
             });
         }};
 
@@ -55,9 +51,9 @@ public class Reader extends JFrame {
             add(new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15)) {{
                 add(importButton);
             }}, BorderLayout.PAGE_START);
-            add(new JPanel() {{
-                add(inputArea);
-                add(outputArea);
+            add(new JPanel(new BorderLayout()) {{
+                add(inputArea, BorderLayout.WEST);
+                add(outputArea, BorderLayout.CENTER);
             }}, BorderLayout.CENTER);
         }});
 
@@ -68,12 +64,25 @@ public class Reader extends JFrame {
     }
 
     public static void main(String[] args) {
-        Reader r = new Reader();
+        new Reader();
     }
 
-    private class SubPanel extends JPanel {
-        public SubPanel() {
+    private static class TextDisplay extends JScrollPane {
+        public JTextArea textArea;
 
+        public TextDisplay() {
+            super(new JTextArea("test"), JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            textArea = new JTextArea() {{
+                setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
+                setBackground(Color.decode("#F2FBFF"));
+                setLineWrap(false);
+            }};
+            setViewportView(textArea);
+            setPreferredSize(new Dimension(400, 400));
+        }
+
+        public void setText(String content) {
+            textArea.setText(content);
         }
     }
 }
